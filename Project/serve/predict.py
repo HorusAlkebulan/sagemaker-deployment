@@ -4,7 +4,7 @@ import os
 import pickle
 import sys
 import sagemaker_containers
-import pandas as pd
+# import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
@@ -69,13 +69,19 @@ def predict_fn(input_data, model):
     #       You should produce two variables:
     #         data_X   - A sequence of length 500 which represents the converted review
     #         data_len - The length of the review
+    print('predict_fn()')
+    print('Type: type', input_data)
+    print('Input_data:', input_data)
 
-    data_X = None
-    data_len = None
+    sentence = review_to_words(input_data)
+    sample_X, sample_X_len = convert_and_pad(model.word_dict, sentence)
+                
+    #     data_X = np.array(sample_X)
+    #     data_len = np.count_nonzero(sample_X_len)
 
     # Using data_X and data_len we construct an appropriate input tensor. Remember
     # that our model expects input data of the form 'len, review[500]'.
-    data_pack = np.hstack((data_len, data_X))
+    data_pack = np.hstack((sample_X_len, sample_X))
     data_pack = data_pack.reshape(1, -1)
     
     data = torch.from_numpy(data_pack)
@@ -86,7 +92,9 @@ def predict_fn(input_data, model):
 
     # TODO: Compute the result of applying the model to the input data. The variable `result` should
     #       be a numpy array which contains a single integer which is either 1 or 0
-
-    result = None
+    with torch.no_grad():
+        result_endpoint = float(model(data))
+        result_endpoint_np = result_endpoint.cpu().numpy()
+        result = np.round(result_endpoint_np).astype(int)
 
     return result
