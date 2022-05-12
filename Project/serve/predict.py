@@ -69,32 +69,35 @@ def predict_fn(input_data, model):
     #       You should produce two variables:
     #         data_X   - A sequence of length 500 which represents the converted review
     #         data_len - The length of the review
-    print('predict_fn()')
-    print('Type: type', input_data)
-    print('Input_data:', input_data)
 
-    sentence = review_to_words(input_data)
-    sample_X, sample_X_len = convert_and_pad(model.word_dict, sentence)
-                
-    #     data_X = np.array(sample_X)
-    #     data_len = np.count_nonzero(sample_X_len)
+    try:
+        sentence = review_to_words(input_data)
+        sample_X, sample_X_len = convert_and_pad(model.word_dict, sentence)
 
-    # Using data_X and data_len we construct an appropriate input tensor. Remember
-    # that our model expects input data of the form 'len, review[500]'.
-    data_pack = np.hstack((sample_X_len, sample_X))
-    data_pack = data_pack.reshape(1, -1)
-    
-    data = torch.from_numpy(data_pack)
-    data = data.to(device)
+        #     data_X = np.array(sample_X)
+        #     data_len = np.count_nonzero(sample_X_len)
 
-    # Make sure to put the model into evaluation mode
-    model.eval()
+        # Using data_X and data_len we construct an appropriate input tensor. Remember
+        # that our model expects input data of the form 'len, review[500]'.
+        data_pack = np.hstack((sample_X_len, sample_X))
+        data_pack = data_pack.reshape(1, -1)
 
-    # TODO: Compute the result of applying the model to the input data. The variable `result` should
-    #       be a numpy array which contains a single integer which is either 1 or 0
-    with torch.no_grad():
-        result_endpoint = float(model(data))
-        result_endpoint_np = result_endpoint.cpu().numpy()
-        result = np.round(result_endpoint_np).astype(int)
+        data = torch.from_numpy(data_pack)
+        data = data.to(device)
 
+        # Make sure to put the model into evaluation mode
+        model.eval()
+
+        # TODO: Compute the result of applying the model to the input data. The variable `result` should
+        #       be a numpy array which contains a single integer which is either 1 or 0
+        with torch.no_grad():
+            result_endpoint = float(model(data))
+            result_endpoint_np = np.array(result_endpoint)
+            result = np.round(result_endpoint_np).astype(int)
+
+        # handle 0 sagemaker_containers._errors.ClientError: 'ascii' codec can't encode character 'xe9' in position 400: ordinal not in range(128)
+    except Exception as e:
+        print('predict error: ' + str(e))
+        result = -1.0
+ 
     return result
